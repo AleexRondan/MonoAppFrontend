@@ -117,7 +117,7 @@ function HomePage() {
       }
 
       window.location.href =
-        "https://mono-app-inpage.vercel.app" + encodeURIComponent(token);
+        "https://mono-app-inpage.vercel.app/?token=" + encodeURIComponent(token);
     } catch (err) {
       console.error("Login error:", err);
       setLoginError("Network error. Please try again.");
