@@ -28,8 +28,12 @@ function App() {
 
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
+  const [userId, setUserId] = useState(null);              // ⭐ guardamo la id
 
-  const [showMascot, setShowMascot] = useState(false); // ⭐ estado mascota
+  const [showMascot, setShowMascot] = useState(false);     // ⭐ estado mascota
+
+  // 💰 dinero total ahorrao en BD
+  const [totalMoneySaved, setTotalMoneySaved] = useState(0);
 
   const medicalPhrases = [
     "Smoking damages your lungs and increases the risk of chronic bronchitis and emphysema.",
@@ -44,15 +48,14 @@ function App() {
     "Every day smoke-free is a day your body is actively repairing damage."
   ];
 
-  const totalMoneySaved = 130;
   const totalCigarettesAvoided = 1100;
 
-  const isOverLimit = count > maxCigarettes;   // ⭐ si te pasas → mono triste
+  const isOverLimit = count > maxCigarettes;   // ⭐ si te pasa → mono tri
 
   const safeCount = Math.min(count, maxCigarettes);
   const progressPercent = maxCigarettes > 0 ? (safeCount / maxCigarettes) * 100 : 0;
 
-  // 🔥 LOGIN TOKEN + CARGA DE USUARIO
+  // 🔥 LOGIN TOKEN + CARGA DE USUARIO (incluyendo cigInitial y dinero ahorrao)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get("token");
@@ -66,8 +69,9 @@ function App() {
     const token = tokenFromUrl || localStorage.getItem("authToken");
     if (!token) return;
 
-    const fetchUser = async () => {
+    const fetchUserAndSavings = async () => {
       try {
+        // 1) Cogemo dato del usuario
         const res = await fetch("https://monoapp.onrender.com/api/users/me", {
           method: "GET",
           headers: {
@@ -82,10 +86,47 @@ function App() {
           setUserName(data.name || "");
           setUserEmail(data.mail || "");
 
-          // ⭐ COGER LIMITE DE LA BD SI VIENE
+          // id del usuario (ajusta el campo si en tu backend e otro: userId, uuid, etc.)
+          if (data.id) {
+            setUserId(data.id);
+          }
+
+          // ⭐ coger cigInitial de la BD al recargar
           if (typeof data.cigInitial === "number") {
             setMaxCigarettes(data.cigInitial);
             setLimitDraft(data.cigInitial);
+          }
+
+          // 2) Si tenemos id, pedimo dinero ahorrao
+          const uid = data.id;
+          if (uid) {
+            try {
+              const savingsRes = await fetch(
+                `https://monoapp.onrender.com/api/savings/${uid}/money-saved`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                  },
+                }
+              );
+
+              const savingsData = await savingsRes.json().catch(() => null);
+
+              if (savingsRes.ok && savingsData !== null) {
+                // puede venir como número directo o como objeto { moneySaved: X }
+                if (typeof savingsData === "number") {
+                  setTotalMoneySaved(savingsData);
+                } else if (
+                  typeof savingsData.moneySaved === "number"
+                ) {
+                  setTotalMoneySaved(savingsData.moneySaved);
+                }
+              }
+            } catch (err) {
+              console.error("Error fetching savings:", err);
+            }
           }
         }
       } catch (err) {
@@ -93,10 +134,10 @@ function App() {
       }
     };
 
-    fetchUser();
+    fetchUserAndSavings();
   }, []);
 
-  // Animaciones
+  // Animacione
   useEffect(() => {
     if (!isBumping) return;
     const t = setTimeout(() => setIsBumping(false), 200);
@@ -131,30 +172,33 @@ function App() {
     setActiveTab("settings");
   };
 
+  // ✅ Guardar nuevo límite: actualizar UI y manda a /api/users/cig-initial
   const handleSaveLimit = async () => {
     const num = parseInt(limitDraft, 10);
-  
-    // validar número
+
+    // validación
     if (isNaN(num) || num <= 0) {
       alert("Please enter a valid number greater than 0");
       return;
     }
-  
-    // ✅ 1) ACTUALIZAR LA UI SIEMPRE QUE EL NÚMERO SEA VÁLIDO
+
+    // 1) UI local
     setMaxCigarettes(num);
     setShowSettings(false);
     setActiveTab("mono");
-  
-    // ✅ 2) LUEGO INTENTAMOS GUARDARLO EN EL SERVIDOR
+
     const token = localStorage.getItem("authToken");
     if (!token) {
       console.error("No auth token found, cannot sync with server");
       return;
     }
-  
+
+    const API_METHOD = "PATCH";  // ajusta si al final e PUT/POST
+    const API_URL = "https://monoapp.onrender.com/api/users/cig-initial";
+
     try {
-      const res = await fetch("https://monoapp.onrender.com/api/users/me", {
-        method: "PUT", // o "PATCH" si tu API usa PATCH
+      const res = await fetch(API_URL, {
+        method: API_METHOD,
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -163,10 +207,14 @@ function App() {
           cigInitial: num,
         }),
       });
-  
+
       if (!res.ok) {
         const text = await res.text();
-        console.error("Error updating max cigarettes in server:", res.status, text);
+        console.error(
+          `Error updating cigInitial (${API_METHOD} ${API_URL}):`,
+          res.status,
+          text
+        );
       }
     } catch (err) {
       console.error("Request failed:", err);
@@ -420,7 +468,8 @@ function App() {
                     setIsAnimatingAmount(true);
                     setSavedAmount(0);
 
-                    const target = 140;
+                    // 🎯 objetivo: dinero total que viene de la BD
+                    const target = totalMoneySaved || 0;
                     const duration = 2000;
                     const steps = 40;
                     let step = 0;
