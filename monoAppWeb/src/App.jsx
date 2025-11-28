@@ -61,10 +61,10 @@ function App() {
     const tokenFromUrl = params.get("token");
 
     // ⭐ Si no hay token → redirigir al homepage
-    if (!tokenFromUrl && !localStorage.getItem("authToken")) {
+    {/* if (!tokenFromUrl && !localStorage.getItem("authToken")) {
       window.location.href = "https://mono-app-homepage.vercel.app/";
       return;
-    }
+    } */}
 
     if (tokenFromUrl) {
       localStorage.setItem("authToken", tokenFromUrl);
