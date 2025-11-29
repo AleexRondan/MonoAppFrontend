@@ -258,7 +258,7 @@ function HomePage() {
               )}
 
               <ReCAPTCHA
-                sitekey="6Lec4BssAAAAAMzaXi_Yqey-3HY13Q_mvLgWavZH"
+                sitekey="6LeS4RssAAAAACu4KRNjBji-Aw_TDFDpfjlhvjSW"
                 onChange={() => setCaptchaVerified(true)}
               />
 
@@ -349,7 +349,7 @@ function HomePage() {
               )}
 
               <ReCAPTCHA
-                sitekey="6Lec4BssAAAAAMzaXi_Yqey-3HY13Q_mvLgWavZH"
+                sitekey="6LeS4RssAAAAACu4KRNjBji-Aw_TDFDpfjlhvjSW"
                 onChange={() => setCaptchaVerified(true)}
               />
 
