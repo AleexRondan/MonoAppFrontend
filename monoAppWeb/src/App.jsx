@@ -172,6 +172,35 @@ function App() {
 
   const handleRemove = () => setCount((p) => Math.max(p - 1, 0));
 
+  const handleNewDayClick = () => {
+    setCount((prev) => {
+      const previousCount = prev;
+  
+      const token = localStorage.getItem("authToken");
+      if (token && userId) {
+        const API_URL = `${baseURL}/api/savings/${userId}/money-saved`; 
+        // 👆 cambia esta ruta si tu backend usa otra específica para guardar este evento
+  
+        fetch(API_URL, {
+          method: "POST",              // o el método que montéis en backend
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            newCount: 0,              // el cero que has pedido
+            smokedToday: previousCount, // la cantidad que llevaba fumada antes de resetear
+          }),
+        }).catch((err) => {
+          console.error("Error sending day reset:", err);
+        });
+      }
+  
+      // reseteamos el contador en la UI
+      return 0;
+    });
+  };
+
   const openSettings = () => {
     setLimitDraft(maxCigarettes);
     setShowSettings(true);
@@ -259,11 +288,18 @@ function App() {
 
           {/* HEADER */}
           <div className="top-header">
-            <p className="top-header-welcome">Welcome {userName || "..."}.</p>
-            <div className="top-header-box">
-              <p className="top-header-text">Your smoke-free journey begins today</p>
-            </div>
+          <p className="top-header-welcome">Welcome {userName || "..."}.</p>
+          <div className="top-header-box">
+            <p className="top-header-text">Your smoke-free journey begins today</p>
           </div>
+
+          <p
+            className="top-header-subtext"
+            onClick={handleNewDayClick}
+          >
+            Click to start a new day
+          </p>
+        </div>
 
           {/* ===================== MONO TAB ===================== */}
           {activeTab === "mono" && (

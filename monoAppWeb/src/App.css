@@ -801,3 +801,15 @@
   }
 }
 
+.top-header-subtext {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: #ffffff;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.top-header-subtext:hover {
+  opacity: 0.85;
+}
