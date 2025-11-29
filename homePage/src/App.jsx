@@ -45,7 +45,7 @@ function HomePage() {
         setQuoteIndex((prev) => (prev + 1) % quotes.length);
         setFade(true);
       }, 400);
-    }, 10000);
+    }, 7000);
 
     return () => clearInterval(interval);
   }, []);
