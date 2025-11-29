@@ -266,9 +266,6 @@ function HomePage() {
                 Login
               </button>
 
-              <button type="submit" className="btn btn-primary">
-                Login
-              </button>
             </form>
 
             <p className="switch-text">
@@ -360,9 +357,6 @@ function HomePage() {
                 Register
               </button>
 
-              <button type="submit" className="btn btn-primary">
-                Register
-              </button>
             </form>
 
             <p className="switch-text">
