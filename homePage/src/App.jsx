@@ -1,10 +1,13 @@
-
+import ReCAPTCHA from "react-google-recaptcha";
 import React, { useState, useEffect } from "react";
 import "./App.css";
 
 function HomePage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+
+  //Captcha
+  const [captchaVerified, setCaptchaVerified] = useState(false);
 
   // Login states
   const [loginMail, setLoginMail] = useState("");
@@ -62,6 +65,7 @@ function HomePage() {
   const closeModals = () => {
     setShowLogin(false);
     setShowRegister(false);
+    setCaptchaVerified(false);
     setLoginError("");
     setRegisterError("");
   };
@@ -253,6 +257,15 @@ function HomePage() {
                 <p className="error-text">{loginError}</p>
               )}
 
+              <ReCAPTCHA
+                sitekey="6LeD3xssAAAAAMBpweR5PuK2v2v9O10aueKBh2EA"
+                onChange={() => setCaptchaVerified(true)}
+              />
+
+              <button type="submit" className="btn btn-primary" disabled={!captchaVerified}>
+                Login
+              </button>
+
               <button type="submit" className="btn btn-primary">
                 Login
               </button>
@@ -337,6 +350,15 @@ function HomePage() {
               {registerError && (
                 <p className="error-text">{registerError}</p>
               )}
+
+              <ReCAPTCHA
+                sitekey="6LeD3xssAAAAAMBpweR5PuK2v2v9O10aueKBh2EA"
+                onChange={() => setCaptchaVerified(true)}
+              />
+
+              <button type="submit" className="btn btn-primary" disabled={!captchaVerified}>
+                Register
+              </button>
 
               <button type="submit" className="btn btn-primary">
                 Register
