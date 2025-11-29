@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-import ReCAPTCHA from "react-google-recaptcha";
 import "./App.css";
 import monkeyImage from "./assets/mono.png";
 import happyMon from "./assets/happy_mon.png";     //  mono feliz
 import sadMon from "./assets/sad_mon.png";         //  mono triste
+
+// 👉 baseURL de tu backend
+const baseURL = "https://monoapp.onrender.com";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -29,11 +31,11 @@ function App() {
 
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
-  const [userId, setUserId] = useState(null);              // ⭐ guardamo la id
+  const [userId, setUserId] = useState(null);
 
-  const [showMascot, setShowMascot] = useState(false);     // ⭐ estado mascota
+  const [showMascot, setShowMascot] = useState(false);
 
-  // 💰 dinero total ahorrao en BD
+  // 💰 dinero total ahorrao en BD (de /api/savings/{userId}/money-saved)
   const [totalMoneySaved, setTotalMoneySaved] = useState(0);
 
   const medicalPhrases = [
@@ -51,21 +53,21 @@ function App() {
 
   const totalCigarettesAvoided = 1100;
 
-  const isOverLimit = count > maxCigarettes;   // ⭐ si te pasa → mono tri
+  const isOverLimit = count > maxCigarettes;
 
   const safeCount = Math.min(count, maxCigarettes);
   const progressPercent = maxCigarettes > 0 ? (safeCount / maxCigarettes) * 100 : 0;
 
-  // 🔥 LOGIN TOKEN + CARGA DE USUARIO (incluyendo cigInitial y dinero ahorrao)
+  // 🔐 login + carga de usuario + ahorro desde BD
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const tokenFromUrl = params.get("token");
 
-    // ⭐ Si no hay token → redirigir al homepage
-    {/* if (!tokenFromUrl && !localStorage.getItem("authToken")) {
+    // si no hay token ni en la url ni en localStorage → mandar al homepage
+    if (!tokenFromUrl && !localStorage.getItem("authToken")) {
       window.location.href = "https://mono-app-homepage.vercel.app/";
       return;
-    } */}
+    }
 
     if (tokenFromUrl) {
       localStorage.setItem("authToken", tokenFromUrl);
@@ -78,8 +80,8 @@ function App() {
 
     const fetchUserAndSavings = async () => {
       try {
-        // 1) Cogemo dato del usuario
-        const res = await fetch("https://monoapp.onrender.com/api/users/me", {
+        // 1) datos del usuario
+        const res = await fetch(`${baseURL}/api/users/me`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -93,23 +95,22 @@ function App() {
           setUserName(data.name || "");
           setUserEmail(data.mail || "");
 
-          // id del usuario (ajusta el campo si en tu backend e otro: userId, uuid, etc.)
           if (data.id) {
             setUserId(data.id);
           }
 
-          // ⭐ coger cigInitial de la BD al recargar
+          // límite de cigarros inicial desde BD (cigInitial)
           if (typeof data.cigInitial === "number") {
             setMaxCigarettes(data.cigInitial);
             setLimitDraft(data.cigInitial);
           }
 
-          // 2) Si tenemos id, pedimo dinero ahorrao
+          // 2) ahorro total desde /api/savings/{userId}/money-saved
           const uid = data.id;
           if (uid) {
             try {
               const savingsRes = await fetch(
-                `https://monoapp.onrender.com/api/savings/${uid}/money-saved`,
+                `${baseURL}/api/savings/${uid}/money-saved`,
                 {
                   method: "GET",
                   headers: {
@@ -121,13 +122,11 @@ function App() {
 
               const savingsData = await savingsRes.json().catch(() => null);
 
+              // puede ser número directo o objeto
               if (savingsRes.ok && savingsData !== null) {
-                // puede venir como número directo o como objeto { moneySaved: X }
                 if (typeof savingsData === "number") {
                   setTotalMoneySaved(savingsData);
-                } else if (
-                  typeof savingsData.moneySaved === "number"
-                ) {
+                } else if (typeof savingsData.moneySaved === "number") {
                   setTotalMoneySaved(savingsData.moneySaved);
                 }
               }
@@ -144,7 +143,7 @@ function App() {
     fetchUserAndSavings();
   }, []);
 
-  // Animacione
+  // animacione
   useEffect(() => {
     if (!isBumping) return;
     const t = setTimeout(() => setIsBumping(false), 200);
@@ -179,17 +178,15 @@ function App() {
     setActiveTab("settings");
   };
 
-  // ✅ Guardar nuevo límite: actualizar UI y manda a /api/users/cig-initial
+  // guardar nuevo límite en BD: {{baseURL}}/api/users/cig-initial
   const handleSaveLimit = async () => {
     const num = parseInt(limitDraft, 10);
 
-    // validación
     if (isNaN(num) || num <= 0) {
       alert("Please enter a valid number greater than 0");
       return;
     }
 
-    // 1) UI local
     setMaxCigarettes(num);
     setShowSettings(false);
     setActiveTab("mono");
@@ -200,8 +197,8 @@ function App() {
       return;
     }
 
-    const API_METHOD = "PATCH";  // ajusta si al final e PUT/POST
-    const API_URL = "https://monoapp.onrender.com/api/users/cig-initial";
+    const API_METHOD = "PATCH"; // cambia a PUT/POST si tu backend lo necesita
+    const API_URL = `${baseURL}/api/users/cig-initial`;
 
     try {
       const res = await fetch(API_URL, {
@@ -228,7 +225,7 @@ function App() {
     }
   };
 
-  // Ciclo de respiración
+  // ciclo de respiración
   const handleHomeButtonClick = () => {
     if (homePhase !== "idle") return;
 
@@ -274,7 +271,6 @@ function App() {
 
               {/* ===== CONTADOR ===== */}
               <div className="counter-card">
-              
                 <h2 className="counter-title">Cigarette</h2>
 
                 <div className="progress-bar">
@@ -307,11 +303,10 @@ function App() {
               <div
                 className="mascot-toggle"
                 onClick={() => setShowMascot(true)}
-              > 
+              >
                 {!showMascot && (
                   <p className="mascot-text">CLICK ON ME TO SEE THE MONO.</p>
                 )}
-                
 
                 {showMascot && (
                   <img
@@ -381,7 +376,7 @@ function App() {
               className={`nav-button ${activeTab === "settings" ? "nav-active" : ""}`}
               onClick={openSettings}
             >
-              ⚙️ 
+              ⚙️
             </button>
           </nav>
 
@@ -456,7 +451,7 @@ function App() {
                 <p className="breath-text">You just saved 0.5 cents.</p>
 
                 <p className="breath-subtext">
-                  <b><u>Still wanting to smoke?</u></b> Click the button, it will show how much 
+                  <b><u>Still wanting to smoke?</u></b> Click the button, it will show how much
                   <strong> money you have saved </strong> until you use this WebApp.
                 </p>
 
@@ -475,7 +470,7 @@ function App() {
                     setIsAnimatingAmount(true);
                     setSavedAmount(0);
 
-                    // 🎯 objetivo: dinero total que viene de la BD
+                    // 🎯 objetivo: valor de BD de /api/savings/{userId}/money-saved
                     const target = totalMoneySaved || 0;
                     const duration = 2000;
                     const steps = 40;
