@@ -6,8 +6,11 @@ function HomePage() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
-  //Captcha
+  // Captcha: tracks if the user has successfully solved the challenge
   const [captchaVerified, setCaptchaVerified] = useState(false);
+
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingRegister, setLoadingRegister] = useState(false);
 
   // Login states
   const [loginMail, setLoginMail] = useState("");
@@ -37,7 +40,7 @@ function HomePage() {
     "You’re not just quitting smoking — you’re reclaiming your life. Every step forward, no matter how small, is a step toward a healthier, happier you.",
   ];
 
-  // Rotate quotes every 10 seconds
+  // Rotate quotes periodically with a fade animation
   useEffect(() => {
     const interval = setInterval(() => {
       setFade(false);
@@ -50,18 +53,23 @@ function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
+  // Open login modal and reset login-related errors
   const openLogin = () => {
     setShowLogin(true);
     setShowRegister(false);
     setLoginError("");
+    setCaptchaVerified(false);
   };
 
+  // Open register modal and reset register-related errors
   const openRegister = () => {
     setShowRegister(true);
     setShowLogin(false);
     setRegisterError("");
+    setCaptchaVerified(false);
   };
 
+  // Close both modals and reset shared state
   const closeModals = () => {
     setShowLogin(false);
     setShowRegister(false);
@@ -71,11 +79,14 @@ function HomePage() {
   };
 
   // ----------------------
-  // 🔐 LOGIN SUBMIT
+  // LOGIN SUBMIT HANDLER
   // ----------------------
+  // Sends login credentials to the backend API.
+  // If the response contains a token (token/accessToken), redirects to the main app.
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setLoginError("");
+    setLoadingLogin(true);
 
     try {
       const res = await fetch("https://monoapp.onrender.com/api/auth/login", {
@@ -94,7 +105,7 @@ function HomePage() {
         return;
       }
 
-      // JSON or plain text
+      // Handle JSON or plain-text responses
       let raw;
       let data;
 
@@ -109,6 +120,7 @@ function HomePage() {
 
       console.log("Login response:", raw);
 
+      // Accept several possible token field names
       let token =
         data.token ||
         data.accessToken ||
@@ -120,20 +132,26 @@ function HomePage() {
         return;
       }
 
+      // Redirect user to the main application with token in query string
       window.location.href =
         "https://mono-app-inpage.vercel.app/?token=" + encodeURIComponent(token);
     } catch (err) {
       console.error("Login error:", err);
       setLoginError("Network error. Please try again.");
+    } finally{
+      setLoadingLogin(false);
     }
   };
 
   // ----------------------
-  // 📝 REGISTER SUBMIT
+  // REGISTER SUBMIT HANDLER
   // ----------------------
+  // Sends registration data to the backend API.
+  // If the response contains a token (token/accessToken), redirects to the main app.
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
     setRegisterError("");
+    setLoadingRegister(true);
 
     try {
       const res = await fetch(
@@ -158,6 +176,7 @@ function HomePage() {
         return;
       }
 
+      // Handle JSON or plain-text responses
       let raw;
       let data;
       try {
@@ -171,6 +190,7 @@ function HomePage() {
 
       console.log("Register raw response:", raw);
 
+      // Accept several possible token field names
       let token =
         data.token ||
         data.accessToken ||
@@ -182,11 +202,14 @@ function HomePage() {
         return;
       }
 
+      // Redirect user to the main application (local dev URL here)
       window.location.href =
         "http://localhost:5173/?token=" + encodeURIComponent(token);
     } catch (err) {
       console.error("Register error:", err);
       setRegisterError("Network error. Please try again.");
+    } finally {
+      setLoadingRegister(false);
     }
   };
 
@@ -221,7 +244,7 @@ function HomePage() {
         </div>
       </main>
 
-      {/* ---------------- LOGIN MODAL ---------------- */}
+      {/* LOGIN MODAL */}
       {showLogin && (
         <div className="modal-overlay" onClick={closeModals}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -253,19 +276,25 @@ function HomePage() {
                 />
               </label>
 
-              {loginError && (
-                <p className="error-text">{loginError}</p>
-              )}
+              {loginError && <p className="error-text">{loginError}</p>}
 
+              {/* Captcha must be solved before enabling the Login button */}
               <ReCAPTCHA
                 sitekey="6LeS4RssAAAAACu4KRNjBji-Aw_TDFDpfjlhvjSW"
                 onChange={() => setCaptchaVerified(true)}
               />
 
-              <button type="submit" className="btn btn-primary" disabled={!captchaVerified}>
-                Login
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!captchaVerified || loadingLogin}
+              >
+                {loadingLogin ? (
+                  <div className="spinner"></div>
+                ) : (
+                  "Login"
+                )}
               </button>
-
             </form>
 
             <p className="switch-text">
@@ -278,7 +307,7 @@ function HomePage() {
         </div>
       )}
 
-      {/* ---------------- REGISTER MODAL ---------------- */}
+      {/* REGISTER MODAL */}
       {showRegister && (
         <div className="modal-overlay" onClick={closeModals}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -348,15 +377,23 @@ function HomePage() {
                 <p className="error-text">{registerError}</p>
               )}
 
+              {/* Captcha must be solved before enabling the Register button */}
               <ReCAPTCHA
                 sitekey="6LeS4RssAAAAACu4KRNjBji-Aw_TDFDpfjlhvjSW"
                 onChange={() => setCaptchaVerified(true)}
               />
 
-              <button type="submit" className="btn btn-primary" disabled={!captchaVerified}>
-                Register
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!captchaVerified || loadingRegister}
+              >
+                {loadingRegister ? (
+                  <div className="spinner"></div>
+                ) : (
+                  "Register"
+                )}
               </button>
-
             </form>
 
             <p className="switch-text">
