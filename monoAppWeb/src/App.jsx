@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import "./App.css";
-import monkeyImage from "./assets/mono.png";
 import happyMon from "./assets/happy_mon.png";     //  mono feliz
 import sadMon from "./assets/sad_mon.png";         //  mono triste
 
-// 👉 baseURL de tu backend
+//  baseURL de tu backend
 const baseURL = "https://monoapp.onrender.com";
 
 function App() {
