@@ -204,7 +204,7 @@ function HomePage() {
 
       // Redirect user to the main application (local dev URL here)
       window.location.href =
-        "https://mono-app-frontend-khp6.vercel.app/" + encodeURIComponent(token);
+        "https://mono-app-inpage.vercel.app/token=" + encodeURIComponent(token);
     } catch (err) {
       console.error("Register error:", err);
       setRegisterError("Network error. Please try again.");
